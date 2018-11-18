@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">Joystick Location</string>
+    <string name="google_maps_key" translatable="false" templateMergeStrategy="preserve">AIzaSyCAW3dHM0k9JikzbSm2M23jO0NQGytOp5k</string>
+</resources>
