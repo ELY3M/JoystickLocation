@@ -1,4 +1,7 @@
 <resources>
     <string name="app_name">Joystick Location</string>
-    <string name="google_maps_key" translatable="false" templateMergeStrategy="preserve">AIzaSyCAW3dHM0k9JikzbSm2M23jO0NQGytOp5k</string>
+    <string name="google_maps_key" translatable="false" templateMergeStrategy="preserve">!!!PUT YOUR OWN API KEY HERE!!!</string>
 </resources>
+
+
+<!-- I know google maps sucks!  I would use osm instead -->
