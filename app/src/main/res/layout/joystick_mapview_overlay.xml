@@ -47,4 +47,12 @@
         android:layout_gravity="top|right"
         android:button="@drawable/checkbox_joystick_snap_selector"/>
 
+
+    <ImageView
+        android:id="@+id/settings"
+        android:layout_width="32dp"
+        android:layout_height="32dp"
+        android:layout_gravity="bottom|right"
+        android:src="@drawable/settings"/>
+
 </FrameLayout>

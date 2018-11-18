@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!--
+
+*   private static final double WALKINGSPEED = 0.000015;
+    private static final double RUNNINGSPEED = 0.000030;
+    private static final double DRIVINGSPEED = 0.000060;
+    private static final double FASTDRIVINGSPEED = 0.000100;
+    private static final double FLYINGSPEED = 0.000500;
+    private static final double WRAPSPEED = 0.130100;
+
+-->
+
+<resources>
+	<string-array name="speed">
+        <item name="walking">0.000015</item>
+        <item name="running">0.000030</item>
+        <item name="driving">0.000060</item>
+        <item name="fast driving">0.000100</item>
+        <item name="flying">0.000500</item>
+        <item name="warp speed!!!">0.130100</item>
+        <item name="SUPER FAST!!!">0.939100</item>
+    </string-array>	
+</resources>

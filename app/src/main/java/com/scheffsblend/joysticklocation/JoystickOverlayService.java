@@ -1,8 +1,11 @@
 package com.scheffsblend.joysticklocation;
 
+import android.app.AlertDialog;
 import android.app.Service;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.res.Resources;
 import android.graphics.PixelFormat;
 import android.location.Location;
 import android.location.LocationListener;
@@ -13,6 +16,7 @@ import android.os.IBinder;
 import android.os.SystemClock;
 import android.preference.PreferenceManager;
 import android.support.annotation.Nullable;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
@@ -20,6 +24,7 @@ import android.view.View;
 import android.view.WindowManager;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
+import android.widget.Toast;
 
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationServices;
@@ -38,14 +43,21 @@ import java.util.Random;
 public class JoystickOverlayService extends Service implements LocationListener, OnMapReadyCallback,
         GoogleApiClient.ConnectionCallbacks {
 
-    private static final double WALKINGSPEED = 0.000015;
-    private static final double RUNNINGSPEED = 0.000030;
-    private static final double DRIVINGSPEED = 0.000060;
-    private static final long UPDATE_DURATION = 250L;
-    private static final long UPDATE_DURATION_STATIONARY = 1000L;
-    private static final double MAX_SPEED_FACTOR = DRIVINGSPEED;
-    private static final String KEY_LAST_LATITUDE = "last_known_latitude";
-    private static final String KEY_LAST_LONGITUDE = "last_known_longitude";
+    private String TAG = "JoystickOverlayService";
+    private String KEY_SPEED = "last_known_speed";
+    private String KEY_LAST_LATITUDE = "last_known_latitude";
+    private String KEY_LAST_LONGITUDE = "last_known_longitude";
+    private double WALKINGSPEED = 0.000015;
+    private double RUNNINGSPEED = 0.000030;
+    private double DRIVINGSPEED = 0.000060;
+    private double FASTDRIVINGSPEED = 0.000100;
+    private double FLYINGSPEED = 0.000500;
+    private double WRAPSPEED = 0.130100;
+    private double setspeed = WALKINGSPEED;
+    private long UPDATE_DURATION = 250L;
+    private long UPDATE_DURATION_STATIONARY = 1000L;
+    private double MAX_SPEED_FACTOR = setspeed;
+
 
     private View mOverlay;
     private CheckBox mSnapBack;
@@ -92,6 +104,8 @@ public class JoystickOverlayService extends Service implements LocationListener,
         LayoutInflater inflater = getSystemService(LayoutInflater.class);
         mOverlay = inflater.inflate(R.layout.joystick_mapview_overlay, null, false);
         mLocationManager = getSystemService(LocationManager.class);
+
+
         mMapView = (MapView) mOverlay.findViewById(R.id.map_view);
         mMapView.onCreate(null);
         mMapView.onResume();
@@ -108,6 +122,18 @@ public class JoystickOverlayService extends Service implements LocationListener,
                 jv.setSnapBackToCenter(isChecked);
             }
         });
+
+        setspeed = getspeed();
+        Log.i(TAG, "speed: "+setspeed);
+        View SettingsButton = mOverlay.findViewById(R.id.settings);
+        SettingsButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                settingsdialog();
+
+            }
+        });
+
 
         int overlayWidth = getResources().getDimensionPixelSize(R.dimen.overlay_width);
         int overlayHeight = getResources().getDimensionPixelSize(R.dimen.overlay_height);
@@ -152,6 +178,7 @@ public class JoystickOverlayService extends Service implements LocationListener,
             edit.putString(KEY_LAST_LATITUDE, "" + mCurrentLocation.getLatitude());
             edit.putString(KEY_LAST_LONGITUDE, "" + mCurrentLocation.getLongitude());
             edit.commit();
+            edit.apply();
         }
     }
 
@@ -215,6 +242,9 @@ public class JoystickOverlayService extends Service implements LocationListener,
             new JoystickView.OnJoystickPositionChangedListener() {
         @Override
         public void onJoystickPositionChanged(float x, float y) {
+            MAX_SPEED_FACTOR = setspeed;
+            Log.i(TAG, "joystick speed: "+setspeed);
+            Log.i(TAG, "joystick MAX_SPEED_FACTOR: "+MAX_SPEED_FACTOR);
             if (mCurrentLocation != null) {
                 if (x != 0.0 || y != 0.0) {
                     double theta = Math.atan2(-y, x);
@@ -245,6 +275,9 @@ public class JoystickOverlayService extends Service implements LocationListener,
                 onLocationChanged(mCurrentLocation);
                 updateDuration = UPDATE_DURATION;
             }
+            MAX_SPEED_FACTOR = setspeed;
+            Log.i(TAG, "running speed: "+setspeed);
+            Log.i(TAG, "MAX_SPEED_FACTOR: "+MAX_SPEED_FACTOR);
             latitude += mRandom.nextDouble() * MAX_SPEED_FACTOR - MAX_SPEED_FACTOR / 2;
             longitude += mRandom.nextDouble() * MAX_SPEED_FACTOR - MAX_SPEED_FACTOR / 2;
             mMockLocationProvider.pushLocation(latitude, longitude,
@@ -280,4 +313,39 @@ public class JoystickOverlayService extends Service implements LocationListener,
     public void onConnectionSuspended(int i) {
 
     }
+
+    double getspeed() {
+        double getspeed;
+        getspeed = Double.parseDouble(PreferenceManager.getDefaultSharedPreferences(getApplicationContext()).getString(KEY_SPEED, String.valueOf(FASTDRIVINGSPEED)));
+        Log.i(TAG, "getspeed: "+getspeed);
+        return getspeed;
+    }
+
+
+    void settingsdialog() {
+        Resources res = getResources();
+        final String[] speed = res.getStringArray(R.array.speed);
+        AlertDialog.Builder alt_bld = new AlertDialog.Builder(this);
+        alt_bld.setTitle("Select a speed for mock gps");
+        alt_bld.setSingleChoiceItems(speed, -1, new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int item) {
+                Toast.makeText(getApplicationContext(), "Set Speed to " + speed[item], Toast.LENGTH_SHORT).show();
+                setspeed = Double.parseDouble(speed[item]);
+                //save to our prefs
+                SharedPreferences.Editor edit = PreferenceManager.getDefaultSharedPreferences(getApplicationContext()).edit();
+                edit.putString(KEY_SPEED, String.valueOf(setspeed));
+                edit.commit();
+                edit.apply();
+                Log.i(TAG, "saved speed: "+setspeed);
+                dialog.dismiss();
+
+
+            }
+        });
+        AlertDialog alert = alt_bld.create();
+        alert.getWindow().setType(WindowManager.LayoutParams.TYPE_SYSTEM_ALERT);
+        alert.show();
+    }
+
+
 }
