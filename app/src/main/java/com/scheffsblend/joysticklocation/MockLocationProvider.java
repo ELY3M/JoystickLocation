@@ -30,7 +30,7 @@ public class MockLocationProvider {
         }
     }
 
-    public void pushLocation(double lat, double lon, float bearing) {
+    public void pushLocation(double lat, double lon, float bearing, float speed) {
         LocationManager lm = (LocationManager) ctx.getSystemService(
                 Context.LOCATION_SERVICE);
 
@@ -40,6 +40,7 @@ public class MockLocationProvider {
             mockLocation.setLongitude(lon);
             mockLocation.setAltitude(0);
             mockLocation.setBearing(bearing);
+            mockLocation.setSpeed(speed);
             mockLocation.setTime(System.currentTimeMillis());
             mockLocation.setElapsedRealtimeNanos(SystemClock.elapsedRealtimeNanos());
             if (mRandom.nextInt(10) == 0) {

@@ -38,25 +38,58 @@ import com.google.android.gms.maps.model.LatLng;
 import java.util.Random;
 
 /**
- * Created by clark on 7/20/2016.
+
+
+ <item name="walking">0.000015</item>
+ <item name="running">0.000030</item>
+ <item name="driving">0.000060</item>
+ <item name="fast driving">0.000100</item>
+ <item name="flying">0.000500</item>
+ <item name="warp speed!!!">0.130100</item>
+ <item name="SUPER FAST!!!">0.939100</item>
+
+
  */
 public class JoystickOverlayService extends Service implements LocationListener, OnMapReadyCallback,
         GoogleApiClient.ConnectionCallbacks {
 
     private String TAG = "JoystickOverlayService";
     private String KEY_SPEED = "last_known_speed";
+    private String KEY_MYSPEED = "last_known_myspeed";
     private String KEY_LAST_LATITUDE = "last_known_latitude";
     private String KEY_LAST_LONGITUDE = "last_known_longitude";
+
+    float walking = (float)(2 / 2.237);
+    float running = (float)(8 / 2.237);
+    float driving = (float)(60 / 2.237);
+    float fastdriving = (float)(100 / 2.237);
+    float flying = (float)(500 / 2.237);
+    float wrap = (float)(1000 / 2.237);
+    float superfast = (float)(9300 / 2.237);
+
     private double WALKINGSPEED = 0.000015;
     private double RUNNINGSPEED = 0.000030;
     private double DRIVINGSPEED = 0.000060;
     private double FASTDRIVINGSPEED = 0.000100;
     private double FLYINGSPEED = 0.000500;
     private double WRAPSPEED = 0.130100;
+    private double SUPERFASTSPEED = 0.939100;
     private double setspeed = WALKINGSPEED;
+    private float setmyspeed = 0;
     private long UPDATE_DURATION = 250L;
     private long UPDATE_DURATION_STATIONARY = 1000L;
     private double MAX_SPEED_FACTOR = setspeed;
+
+    //double MperSec = progress * 1000.0 / 3600.0;
+
+    //2.237
+
+    //walking speed about 1.4 meters per second (m/s), or about 3.1 miles per hour
+    /*
+    * Now, all that said, here is a general guideline on treadmill speeds:
+    * for most people 2 to 4 mph will be a walking speed; 4 to 5 mph will be a very fast walk or jog;
+    * and anything over 5 mph will be jogging or running.
+    * */
 
 
     private View mOverlay;
@@ -106,15 +139,15 @@ public class JoystickOverlayService extends Service implements LocationListener,
         mLocationManager = getSystemService(LocationManager.class);
 
 
-        mMapView = (MapView) mOverlay.findViewById(R.id.map_view);
+        mMapView = mOverlay.findViewById(R.id.map_view);
         mMapView.onCreate(null);
         mMapView.onResume();
         mMapView.getMapAsync(this);
 
-        final JoystickView jv = (JoystickView) mOverlay.findViewById(R.id.joystick);
+        final JoystickView jv = mOverlay.findViewById(R.id.joystick);
         jv.setOnJoystickPositionChangedListener(mListener);
 
-        mSnapBack = (CheckBox) mOverlay.findViewById(R.id.snap_back);
+        mSnapBack = mOverlay.findViewById(R.id.snap_back);
         mSnapBack.setChecked(jv.getSnapBackToCenter());
         mSnapBack.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
@@ -124,7 +157,7 @@ public class JoystickOverlayService extends Service implements LocationListener,
         });
 
         setspeed = getspeed();
-        Log.i(TAG, "speed: "+setspeed);
+        setmyspeed = getmyspeed();
         View SettingsButton = mOverlay.findViewById(R.id.settings);
         SettingsButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -243,8 +276,6 @@ public class JoystickOverlayService extends Service implements LocationListener,
         @Override
         public void onJoystickPositionChanged(float x, float y) {
             MAX_SPEED_FACTOR = setspeed;
-            Log.i(TAG, "joystick speed: "+setspeed);
-            Log.i(TAG, "joystick MAX_SPEED_FACTOR: "+MAX_SPEED_FACTOR);
             if (mCurrentLocation != null) {
                 if (x != 0.0 || y != 0.0) {
                     double theta = Math.atan2(-y, x);
@@ -266,6 +297,11 @@ public class JoystickOverlayService extends Service implements LocationListener,
                     : null;
             double latitude = mCurrentLocation.getLatitude();
             double longitude = mCurrentLocation.getLongitude();
+            //float speed = mCurrentLocation.getSpeed();
+            //Log.i(TAG, "mCurrentLocation.getSpeed(): "+ speed);
+            Log.i(TAG, "setmyspeed: "+ setmyspeed);
+            float finalmyspeed = (float)(setmyspeed / 2.237);
+            Log.i(TAG, "finalmyspeed: "+ finalmyspeed);
             long updateDuration = UPDATE_DURATION_STATIONARY;
             if (mLatitudeSpeed != 0.0 || mLongitudeSpeed != 0.0) {
                 latitude += mLatitudeSpeed;
@@ -276,15 +312,30 @@ public class JoystickOverlayService extends Service implements LocationListener,
                 updateDuration = UPDATE_DURATION;
             }
             MAX_SPEED_FACTOR = setspeed;
-            Log.i(TAG, "running speed: "+setspeed);
-            Log.i(TAG, "MAX_SPEED_FACTOR: "+MAX_SPEED_FACTOR);
             latitude += mRandom.nextDouble() * MAX_SPEED_FACTOR - MAX_SPEED_FACTOR / 2;
             longitude += mRandom.nextDouble() * MAX_SPEED_FACTOR - MAX_SPEED_FACTOR / 2;
             mMockLocationProvider.pushLocation(latitude, longitude,
-                    lastLocation != null ? lastLocation.bearingTo(mCurrentLocation) : 0f);
+                    lastLocation != null ? lastLocation.bearingTo(mCurrentLocation) : 0f, finalmyspeed);
             mHandler.postDelayed(this, updateDuration);
         }
     };
+
+    /*
+    *
+    *
+    *
+
+location.setLatitude(latitude);
+location.setLongitude(longitude);
+location.setBearing(bearing);
+location.setSpeed(speed);
+location.setAltitude(altitude);
+location.setTime(new Date().getTime());
+location.setProvider(LocationManager.GPS_PROVIDER);
+location.setAccuracy(1);
+
+    * */
+
 
     @Override
     public void onConnected(@Nullable Bundle bundle) {
@@ -300,6 +351,7 @@ public class JoystickOverlayService extends Service implements LocationListener,
                 location.setLongitude(Double.valueOf(lngStr));
                 location.setTime(System.currentTimeMillis());
                 location.setElapsedRealtimeNanos(SystemClock.elapsedRealtimeNanos());
+
             }
         }
         if (location != null) {
@@ -317,26 +369,34 @@ public class JoystickOverlayService extends Service implements LocationListener,
     double getspeed() {
         double getspeed;
         getspeed = Double.parseDouble(PreferenceManager.getDefaultSharedPreferences(getApplicationContext()).getString(KEY_SPEED, String.valueOf(FASTDRIVINGSPEED)));
-        Log.i(TAG, "getspeed: "+getspeed);
         return getspeed;
     }
 
+    float getmyspeed() {
+        float getmyspeed;
+        getmyspeed = Float.parseFloat(PreferenceManager.getDefaultSharedPreferences(getApplicationContext()).getString(KEY_MYSPEED, String.valueOf(0)));
+        return getmyspeed;
+    }
 
     void settingsdialog() {
         Resources res = getResources();
         final String[] speed = res.getStringArray(R.array.speed);
+        final String[] myspeed = res.getStringArray(R.array.setspeed);
         AlertDialog.Builder alt_bld = new AlertDialog.Builder(this);
         alt_bld.setTitle("Select a speed for mock gps");
         alt_bld.setSingleChoiceItems(speed, -1, new DialogInterface.OnClickListener() {
             public void onClick(DialogInterface dialog, int item) {
                 Toast.makeText(getApplicationContext(), "Set Speed to " + speed[item], Toast.LENGTH_SHORT).show();
                 setspeed = Double.parseDouble(speed[item]);
+                setmyspeed = Float.parseFloat(myspeed[item]);
                 //save to our prefs
                 SharedPreferences.Editor edit = PreferenceManager.getDefaultSharedPreferences(getApplicationContext()).edit();
                 edit.putString(KEY_SPEED, String.valueOf(setspeed));
+                edit.putString(KEY_MYSPEED, String.valueOf(setmyspeed));
                 edit.commit();
                 edit.apply();
                 Log.i(TAG, "saved speed: "+setspeed);
+                Log.i(TAG, "saved myspeed: "+setmyspeed);
                 dialog.dismiss();
 
 

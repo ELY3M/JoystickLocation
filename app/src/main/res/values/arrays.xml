@@ -20,5 +20,14 @@
         <item name="flying">0.000500</item>
         <item name="warp speed!!!">0.130100</item>
         <item name="SUPER FAST!!!">0.939100</item>
-    </string-array>	
+    </string-array>
+    <string-array name="setspeed">
+            <item name="walking">2</item>
+            <item name="running">8</item>
+            <item name="driving">40</item>
+            <item name="fast driving">70</item>
+            <item name="flying">500</item>
+            <item name="warp speed!!!">1000</item>
+            <item name="SUPER FAST!!!">9300</item>
+    </string-array>
 </resources>
